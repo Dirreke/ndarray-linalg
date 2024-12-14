@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request: {}
+  workflow_dispatch:
 
 jobs:
   check-format:
@@ -42,8 +43,11 @@ jobs:
       options: --security-opt seccomp=unconfined
     steps:
       - uses: actions/checkout@v4
-      - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Install Cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-tarpaulin
       - name: Generate code coverage
         run: cargo +nightly tarpaulin --features=intel-mkl-system -workspace --out xml
       - name: Upload to codecov.io
