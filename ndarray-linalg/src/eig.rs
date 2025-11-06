@@ -39,10 +39,9 @@ pub trait Eig {
     fn eig(&self) -> Result<(Self::EigVal, Self::EigVec)>;
 }
 
-impl<A, S> Eig for ArrayBase<S, Ix2>
+impl<A> Eig for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type EigVal = Array1<A::Complex>;
     type EigVec = Array2<A::Complex>;
@@ -65,10 +64,9 @@ pub trait EigVals {
     fn eigvals(&self) -> Result<Self::EigVal>;
 }
 
-impl<A, S> EigVals for ArrayBase<S, Ix2>
+impl<A> EigVals for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type EigVal = Array1<A::Complex>;
 

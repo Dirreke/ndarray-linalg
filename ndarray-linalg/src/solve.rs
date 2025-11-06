@@ -72,7 +72,7 @@ pub trait Solve<A: Scalar> {
     ///
     /// Panics if the length of `b` is not the equal to the number of columns
     /// of `A`.
-    fn solve<S: Data<Elem = A>>(&self, b: &ArrayBase<S, Ix1>) -> Result<Array1<A>> {
+    fn solve(&self, b: &ArrayRef<A, Ix1>) -> Result<Array1<A>> {
         let mut b = replicate(b);
         self.solve_inplace(&mut b)?;
         Ok(b)
@@ -100,10 +100,7 @@ pub trait Solve<A: Scalar> {
     ///
     /// Panics if the length of `b` is not the equal to the number of columns
     /// of `A`.
-    fn solve_inplace<'a, S: DataMut<Elem = A>>(
-        &self,
-        b: &'a mut ArrayBase<S, Ix1>,
-    ) -> Result<&'a mut ArrayBase<S, Ix1>>;
+    fn solve_inplace<'a>(&self, b: &'a mut ArrayRef<A, Ix1>) -> Result<&'a mut ArrayRef<A, Ix1>>;
 
     /// Solves a system of linear equations `A^T * x = b` where `A` is `self`, `b`
     /// is the argument, and `x` is the successful result.
@@ -112,7 +109,7 @@ pub trait Solve<A: Scalar> {
     ///
     /// Panics if the length of `b` is not the equal to the number of rows of
     /// `A`.
-    fn solve_t<S: Data<Elem = A>>(&self, b: &ArrayBase<S, Ix1>) -> Result<Array1<A>> {
+    fn solve_t(&self, b: &ArrayRef<A, Ix1>) -> Result<Array1<A>> {
         let mut b = replicate(b);
         self.solve_t_inplace(&mut b)?;
         Ok(b)
@@ -140,10 +137,7 @@ pub trait Solve<A: Scalar> {
     ///
     /// Panics if the length of `b` is not the equal to the number of rows of
     /// `A`.
-    fn solve_t_inplace<'a, S: DataMut<Elem = A>>(
-        &self,
-        b: &'a mut ArrayBase<S, Ix1>,
-    ) -> Result<&'a mut ArrayBase<S, Ix1>>;
+    fn solve_t_inplace<'a>(&self, b: &'a mut ArrayRef<A, Ix1>) -> Result<&'a mut ArrayRef<A, Ix1>>;
 
     /// Solves a system of linear equations `A^H * x = b` where `A` is `self`, `b`
     /// is the argument, and `x` is the successful result.
@@ -152,7 +146,7 @@ pub trait Solve<A: Scalar> {
     ///
     /// Panics if the length of `b` is not the equal to the number of rows of
     /// `A`.
-    fn solve_h<S: Data<Elem = A>>(&self, b: &ArrayBase<S, Ix1>) -> Result<Array1<A>> {
+    fn solve_h(&self, b: &ArrayRef<A, Ix1>) -> Result<Array1<A>> {
         let mut b = replicate(b);
         self.solve_h_inplace(&mut b)?;
         Ok(b)
@@ -178,10 +172,7 @@ pub trait Solve<A: Scalar> {
     ///
     /// Panics if the length of `b` is not the equal to the number of rows of
     /// `A`.
-    fn solve_h_inplace<'a, S: DataMut<Elem = A>>(
-        &self,
-        b: &'a mut ArrayBase<S, Ix1>,
-    ) -> Result<&'a mut ArrayBase<S, Ix1>>;
+    fn solve_h_inplace<'a>(&self, b: &'a mut ArrayRef<A, Ix1>) -> Result<&'a mut ArrayRef<A, Ix1>>;
 }
 
 /// Represents the LU factorization of a matrix `A` as `A = P*L*U`.
@@ -199,13 +190,7 @@ where
     A: Scalar + Lapack,
     S: Data<Elem = A> + RawDataClone,
 {
-    fn solve_inplace<'a, Sb>(
-        &self,
-        rhs: &'a mut ArrayBase<Sb, Ix1>,
-    ) -> Result<&'a mut ArrayBase<Sb, Ix1>>
-    where
-        Sb: DataMut<Elem = A>,
-    {
+    fn solve_inplace<'a>(&self, rhs: &'a mut ArrayRef<A, Ix1>) -> Result<&'a mut ArrayRef<A, Ix1>> {
         assert_eq!(
             rhs.len(),
             self.a.len_of(Axis(1)),
@@ -220,13 +205,10 @@ where
         )?;
         Ok(rhs)
     }
-    fn solve_t_inplace<'a, Sb>(
+    fn solve_t_inplace<'a>(
         &self,
-        rhs: &'a mut ArrayBase<Sb, Ix1>,
-    ) -> Result<&'a mut ArrayBase<Sb, Ix1>>
-    where
-        Sb: DataMut<Elem = A>,
-    {
+        rhs: &'a mut ArrayRef<A, Ix1>,
+    ) -> Result<&'a mut ArrayRef<A, Ix1>> {
         assert_eq!(
             rhs.len(),
             self.a.len_of(Axis(0)),
@@ -241,13 +223,10 @@ where
         )?;
         Ok(rhs)
     }
-    fn solve_h_inplace<'a, Sb>(
+    fn solve_h_inplace<'a>(
         &self,
-        rhs: &'a mut ArrayBase<Sb, Ix1>,
-    ) -> Result<&'a mut ArrayBase<Sb, Ix1>>
-    where
-        Sb: DataMut<Elem = A>,
-    {
+        rhs: &'a mut ArrayRef<A, Ix1>,
+    ) -> Result<&'a mut ArrayRef<A, Ix1>> {
         assert_eq!(
             rhs.len(),
             self.a.len_of(Axis(0)),
@@ -264,38 +243,25 @@ where
     }
 }
 
-impl<A, S> Solve<A> for ArrayBase<S, Ix2>
+impl<A> Solve<A> for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
-    fn solve_inplace<'a, Sb>(
-        &self,
-        rhs: &'a mut ArrayBase<Sb, Ix1>,
-    ) -> Result<&'a mut ArrayBase<Sb, Ix1>>
-    where
-        Sb: DataMut<Elem = A>,
-    {
+    fn solve_inplace<'a>(&self, rhs: &'a mut ArrayRef<A, Ix1>) -> Result<&'a mut ArrayRef<A, Ix1>> {
         let f = self.factorize()?;
         f.solve_inplace(rhs)
     }
-    fn solve_t_inplace<'a, Sb>(
+    fn solve_t_inplace<'a>(
         &self,
-        rhs: &'a mut ArrayBase<Sb, Ix1>,
-    ) -> Result<&'a mut ArrayBase<Sb, Ix1>>
-    where
-        Sb: DataMut<Elem = A>,
-    {
+        rhs: &'a mut ArrayRef<A, Ix1>,
+    ) -> Result<&'a mut ArrayRef<A, Ix1>> {
         let f = self.factorize()?;
         f.solve_t_inplace(rhs)
     }
-    fn solve_h_inplace<'a, Sb>(
+    fn solve_h_inplace<'a>(
         &self,
-        rhs: &'a mut ArrayBase<Sb, Ix1>,
-    ) -> Result<&'a mut ArrayBase<Sb, Ix1>>
-    where
-        Sb: DataMut<Elem = A>,
-    {
+        rhs: &'a mut ArrayRef<A, Ix1>,
+    ) -> Result<&'a mut ArrayRef<A, Ix1>> {
         let f = self.factorize()?;
         f.solve_h_inplace(rhs)
     }
@@ -326,10 +292,9 @@ where
     }
 }
 
-impl<A, Si> Factorize<OwnedRepr<A>> for ArrayBase<Si, Ix2>
+impl<A> Factorize<OwnedRepr<A>> for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    Si: Data<Elem = A>,
 {
     fn factorize(&self) -> Result<LUFactorized<OwnedRepr<A>>> {
         let mut a: Array2<A> = replicate(self);
@@ -405,10 +370,9 @@ where
     }
 }
 
-impl<A, Si> Inverse for ArrayBase<Si, Ix2>
+impl<A> Inverse for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    Si: Data<Elem = A>,
 {
     type Output = Array2<A>;
 
@@ -520,10 +484,9 @@ where
     }
 }
 
-impl<A, S> Determinant<A> for ArrayBase<S, Ix2>
+impl<A> Determinant<A> for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     fn sln_det(&self) -> Result<(A, A::Real)> {
         self.ensure_square()?;
@@ -612,10 +575,9 @@ where
     }
 }
 
-impl<A, S> ReciprocalConditionNum<A> for ArrayBase<S, Ix2>
+impl<A> ReciprocalConditionNum<A> for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     fn rcond(&self) -> Result<A::Real> {
         self.factorize()?.rcond_into()

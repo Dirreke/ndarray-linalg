@@ -46,33 +46,31 @@ where
     }
 }
 
-pub fn replicate<A, Sv, So, D>(a: &ArrayBase<Sv, D>) -> ArrayBase<So, D>
+pub fn replicate<A, S, D>(a: &ArrayRef<A, D>) -> ArrayBase<S, D>
 where
     A: Copy,
-    Sv: Data<Elem = A>,
-    So: DataOwned<Elem = A> + DataMut,
+    S: DataOwned<Elem = A> + DataMut,
     D: Dimension,
 {
     unsafe {
-        let ret = ArrayBase::<So, D>::build_uninit(a.dim(), |view| {
+        let ret = ArrayBase::<S, D>::build_uninit(a.dim(), |view| {
             a.assign_to(view);
         });
         ret.assume_init()
     }
 }
 
-fn clone_with_layout<A, Si, So>(l: MatrixLayout, a: &ArrayBase<Si, Ix2>) -> ArrayBase<So, Ix2>
+fn clone_with_layout<A, S>(l: MatrixLayout, a: &ArrayRef<A, Ix2>) -> ArrayBase<S, Ix2>
 where
     A: Copy,
-    Si: Data<Elem = A>,
-    So: DataOwned<Elem = A> + DataMut,
+    S: DataOwned<Elem = A> + DataMut,
 {
     let shape_builder = match l {
         MatrixLayout::C { row, lda } => (row as usize, lda as usize).set_f(false),
         MatrixLayout::F { col, lda } => (lda as usize, col as usize).set_f(true),
     };
     unsafe {
-        let ret = ArrayBase::<So, _>::build_uninit(shape_builder, |view| {
+        let ret = ArrayBase::<S, _>::build_uninit(shape_builder, |view| {
             a.assign_to(view);
         });
         ret.assume_init()
@@ -119,10 +117,9 @@ where
 /// data in the triangular portion corresponding to `uplo`.
 ///
 /// ***Panics*** if `a` is not square.
-pub(crate) fn triangular_fill_hermitian<A, S>(a: &mut ArrayBase<S, Ix2>, uplo: UPLO)
+pub(crate) fn triangular_fill_hermitian<A>(a: &mut ArrayRef<A, Ix2>, uplo: UPLO)
 where
     A: Scalar + Lapack,
-    S: DataMut<Elem = A>,
 {
     assert!(a.is_square());
     match uplo {

@@ -29,11 +29,9 @@ pub fn aclose<A: Scalar>(test: A, truth: A, atol: A::Real) {
 }
 
 /// check two arrays are close in maximum norm
-pub fn close_max<A, S1, S2, D>(test: &ArrayBase<S1, D>, truth: &ArrayBase<S2, D>, atol: A::Real)
+pub fn close_max<A, D>(test: &ArrayRef<A, D>, truth: &ArrayRef<A, D>, atol: A::Real)
 where
     A: Scalar + Lapack,
-    S1: Data<Elem = A>,
-    S2: Data<Elem = A>,
     D: Dimension,
     D::Pattern: PartialEq + Debug,
 {
@@ -48,11 +46,9 @@ where
 }
 
 /// check two arrays are close in L1 norm
-pub fn close_l1<A, S1, S2, D>(test: &ArrayBase<S1, D>, truth: &ArrayBase<S2, D>, rtol: A::Real)
+pub fn close_l1<A, D>(test: &ArrayRef<A, D>, truth: &ArrayRef<A, D>, rtol: A::Real)
 where
     A: Scalar + Lapack,
-    S1: Data<Elem = A>,
-    S2: Data<Elem = A>,
     D: Dimension,
     D::Pattern: PartialEq + Debug,
 {
@@ -67,11 +63,9 @@ where
 }
 
 /// check two arrays are close in L2 norm
-pub fn close_l2<A, S1, S2, D>(test: &ArrayBase<S1, D>, truth: &ArrayBase<S2, D>, rtol: A::Real)
+pub fn close_l2<A, D>(test: &ArrayRef<A, D>, truth: &ArrayRef<A, D>, rtol: A::Real)
 where
     A: Scalar + Lapack,
-    S1: Data<Elem = A>,
-    S2: Data<Elem = A>,
     D: Dimension,
     D::Pattern: PartialEq + Debug,
 {

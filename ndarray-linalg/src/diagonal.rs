@@ -24,7 +24,7 @@ impl<S: Data> IntoDiagonal<S> for ArrayBase<S, Ix1> {
     }
 }
 
-impl<A, S: Data<Elem = A>> AsDiagonal<A> for ArrayBase<S, Ix1> {
+impl<A> AsDiagonal<A> for ArrayRef<A, Ix1> {
     fn as_diagonal(&self) -> Diagonal<ViewRepr<&A>> {
         Diagonal { diag: self.view() }
     }
@@ -37,10 +37,7 @@ where
 {
     type Elem = A;
 
-    fn apply_mut<S>(&self, a: &mut ArrayBase<S, Ix1>)
-    where
-        S: DataMut<Elem = A>,
-    {
+    fn apply_mut(&self, a: &mut ArrayRef<A, Ix1>) {
         for (val, d) in a.iter_mut().zip(self.diag.iter()) {
             *val *= *d;
         }

@@ -117,10 +117,9 @@ where
     }
 }
 
-impl<A, S> EighInplace for ArrayBase<S, Ix2>
+impl<A> EighInplace for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: DataMut<Elem = A>,
 {
     type EigVal = Array1<A::Real>;
 

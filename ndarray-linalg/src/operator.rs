@@ -10,20 +10,14 @@ pub trait LinearOperator {
     type Elem: Scalar;
 
     /// Apply operator out-place
-    fn apply<S>(&self, a: &ArrayBase<S, Ix1>) -> Array1<S::Elem>
-    where
-        S: Data<Elem = Self::Elem>,
-    {
+    fn apply(&self, a: &ArrayRef<Self::Elem, Ix1>) -> Array1<Self::Elem> {
         let mut a = a.to_owned();
         self.apply_mut(&mut a);
         a
     }
 
     /// Apply operator in-place
-    fn apply_mut<S>(&self, a: &mut ArrayBase<S, Ix1>)
-    where
-        S: DataMut<Elem = Self::Elem>,
-    {
+    fn apply_mut(&self, a: &mut ArrayRef<Self::Elem, Ix1>) {
         let b = self.apply(a);
         azip!((a in a, &b in &b) *a = b);
     }
@@ -38,19 +32,13 @@ pub trait LinearOperator {
     }
 
     /// Apply operator to matrix out-place
-    fn apply2<S>(&self, a: &ArrayBase<S, Ix2>) -> Array2<S::Elem>
-    where
-        S: Data<Elem = Self::Elem>,
-    {
+    fn apply2(&self, a: &ArrayRef<Self::Elem, Ix2>) -> Array2<Self::Elem> {
         let cols: Vec<_> = a.axis_iter(Axis(1)).map(|col| self.apply(&col)).collect();
         hstack(&cols).unwrap()
     }
 
     /// Apply operator to matrix in-place
-    fn apply2_mut<S>(&self, a: &mut ArrayBase<S, Ix2>)
-    where
-        S: DataMut<Elem = Self::Elem>,
-    {
+    fn apply2_mut(&self, a: &mut ArrayRef<Self::Elem, Ix2>) {
         for mut col in a.axis_iter_mut(Axis(1)) {
             self.apply_mut(&mut col)
         }
@@ -73,10 +61,7 @@ where
 {
     type Elem = A;
 
-    fn apply<S>(&self, a: &ArrayBase<S, Ix1>) -> Array1<A>
-    where
-        S: Data<Elem = A>,
-    {
+    fn apply(&self, a: &ArrayRef<A, Ix1>) -> Array1<A> {
         self.dot(a)
     }
 }

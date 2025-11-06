@@ -146,12 +146,11 @@ pub trait IntoTriangular<T> {
     fn into_triangular(self, uplo: UPLO) -> T;
 }
 
-impl<'a, A, S> IntoTriangular<&'a mut ArrayBase<S, Ix2>> for &'a mut ArrayBase<S, Ix2>
+impl<'a, A> IntoTriangular<&'a mut ArrayRef<A, Ix2>> for &'a mut ArrayRef<A, Ix2>
 where
     A: Zero,
-    S: DataMut<Elem = A>,
 {
-    fn into_triangular(self, uplo: UPLO) -> &'a mut ArrayBase<S, Ix2> {
+    fn into_triangular(self, uplo: UPLO) -> &'a mut ArrayRef<A, Ix2> {
         match uplo {
             UPLO::Upper => {
                 for ((i, j), val) in self.indexed_iter_mut() {
@@ -178,7 +177,7 @@ where
     S: DataMut<Elem = A>,
 {
     fn into_triangular(mut self, uplo: UPLO) -> ArrayBase<S, Ix2> {
-        (&mut self).into_triangular(uplo);
+        (&mut *self).into_triangular(uplo);
         self
     }
 }

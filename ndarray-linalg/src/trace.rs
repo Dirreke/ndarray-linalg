@@ -11,10 +11,9 @@ pub trait Trace {
     fn trace(&self) -> Result<Self::Output>;
 }
 
-impl<A, S> Trace for ArrayBase<S, Ix2>
+impl<A> Trace for ArrayRef<A, Ix2>
 where
     A: Scalar + Sum,
-    S: Data<Elem = A>,
 {
     type Output = A;
 

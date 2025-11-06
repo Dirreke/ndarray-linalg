@@ -22,10 +22,9 @@ pub trait Norm {
     fn norm_max(&self) -> Self::Output;
 }
 
-impl<A, S, D> Norm for ArrayBase<S, D>
+impl<A, D> Norm for ArrayRef<A, D>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
     D: Dimension,
 {
     type Output = A::Real;

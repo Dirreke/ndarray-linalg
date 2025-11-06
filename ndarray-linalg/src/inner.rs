@@ -9,18 +9,16 @@ pub trait InnerProduct {
     type Elem: Scalar;
 
     /// Inner product `(self.conjugate, rhs)
-    fn inner<S>(&self, rhs: &ArrayBase<S, Ix1>) -> Self::Elem
-    where
-        S: Data<Elem = Self::Elem>;
+    fn inner(&self, rhs: &ArrayRef<Self::Elem, Ix1>) -> Self::Elem;
 }
 
-impl<A, S> InnerProduct for ArrayBase<S, Ix1>
+impl<A> InnerProduct for ArrayRef<A, Ix1>
 where
     A: Scalar,
-    S: Data<Elem = A>,
 {
     type Elem = A;
-    fn inner<St: Data<Elem = A>>(&self, rhs: &ArrayBase<St, Ix1>) -> A {
+
+    fn inner(&self, rhs: &ArrayRef<A, Ix1>) -> A {
         assert_eq!(self.len(), rhs.len());
         Zip::from(self)
             .and(rhs)
