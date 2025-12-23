@@ -130,9 +130,11 @@ pub trait EigGeneralized {
     ) -> Result<(Self::EigVal, Self::EigVec)>;
 }
 
+/// Turn arrays, references to arrays, and [`ArrayRef`]s into owned arrays
 pub trait MaybeOwnedMatrix {
     type Elem;
 
+    /// Convert into an owned array, cloning only when necessary.
     fn into_owned(self) -> Array2<Self::Elem>;
 }
 
