@@ -125,27 +125,69 @@ pub trait EigGeneralized {
     /// computing the eigenvalues as α/β. If `None`, no approximate comparisons to zero will be
     /// made.
     fn eig_generalized(
-        &self,
+        self,
         thresh_opt: Option<Self::Real>,
     ) -> Result<(Self::EigVal, Self::EigVec)>;
 }
 
-impl<A, S> EigGeneralized for (ArrayBase<S, Ix2>, ArrayBase<S, Ix2>)
+pub trait MaybeOwnedMatrix {
+    type Elem;
+
+    fn into_owned(self) -> Array2<Self::Elem>;
+}
+
+impl<S> MaybeOwnedMatrix for ArrayBase<S, Ix2>
 where
-    A: Scalar + Lapack,
-    S: Data<Elem = A>,
+    S: Data,
+    S::Elem: Clone,
 {
-    type EigVal = Array1<GeneralizedEigenvalue<A::Complex>>;
-    type EigVec = Array2<A::Complex>;
-    type Real = A::Real;
+    type Elem = S::Elem;
+
+    fn into_owned(self) -> Array2<S::Elem> {
+        ArrayBase::into_owned(self)
+    }
+}
+
+impl<S> MaybeOwnedMatrix for &ArrayBase<S, Ix2>
+where
+    S: Data,
+    S::Elem: Clone,
+{
+    type Elem = S::Elem;
+
+    fn into_owned(self) -> Array2<S::Elem> {
+        self.to_owned()
+    }
+}
+
+impl<A> MaybeOwnedMatrix for &ArrayRef2<A>
+where
+    A: Clone,
+{
+    type Elem = A;
+
+    fn into_owned(self) -> Array2<A> {
+        self.to_owned()
+    }
+}
+
+impl<T1, T2> EigGeneralized for (T1, T2)
+where
+    T1: MaybeOwnedMatrix,
+    T1::Elem: Lapack + Scalar,
+    T2: MaybeOwnedMatrix<Elem = T1::Elem>,
+{
+    type EigVal = Array1<GeneralizedEigenvalue<<T1::Elem as Scalar>::Complex>>;
+    type EigVec = Array2<<T1::Elem as Scalar>::Complex>;
+    type Real = <T1::Elem as Scalar>::Real;
 
     fn eig_generalized(
-        &self,
+        self,
         thresh_opt: Option<Self::Real>,
     ) -> Result<(Self::EigVal, Self::EigVec)> {
-        let (mut a, mut b) = (self.0.to_owned(), self.1.to_owned());
+        let (mut a, mut b) = (self.0.into_owned(), self.1.into_owned());
         let layout = a.square_layout()?;
-        let (s, t) = A::eig_generalized(
+        let (s, t) = T1::Elem::eig_generalized(
             true,
             layout,
             a.as_allocated_mut()?,
