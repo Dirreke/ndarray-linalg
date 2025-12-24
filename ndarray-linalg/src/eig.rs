@@ -203,3 +203,25 @@ where
         ))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::MaybeOwnedMatrix;
+
+    #[test]
+    fn test_maybe_owned_matrix() {
+        let a = array![[1.0, 2.0], [3.0, 4.0]];
+        let a_ptr = a.as_ptr();
+        let a1 = MaybeOwnedMatrix::into_owned(a);
+        assert_eq!(a_ptr, a1.as_ptr());
+
+        let b = a1.clone();
+        let b1 = MaybeOwnedMatrix::into_owned(&b);
+        assert_eq!(b, b1);
+        assert_ne!(b.as_ptr(), b1.as_ptr());
+
+        let b2 = MaybeOwnedMatrix::into_owned(&*b);
+        assert_eq!(b, b2);
+        assert_ne!(b.as_ptr(), b2.as_ptr());
+    }
+}
