@@ -35,10 +35,9 @@ pub trait SVDDCInplace {
     ) -> Result<(Option<Self::U>, Self::Sigma, Option<Self::VT>)>;
 }
 
-impl<A, S> SVDDC for ArrayBase<S, Ix2>
+impl<A> SVDDC for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type U = Array2<A>;
     type VT = Array2<A>;
@@ -66,10 +65,9 @@ where
     }
 }
 
-impl<A, S> SVDDCInplace for ArrayBase<S, Ix2>
+impl<A> SVDDCInplace for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: DataMut<Elem = A>,
 {
     type U = Array2<A>;
     type VT = Array2<A>;

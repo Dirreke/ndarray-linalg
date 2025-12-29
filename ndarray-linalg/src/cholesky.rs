@@ -166,13 +166,7 @@ where
     A: Scalar + Lapack,
     S: Data<Elem = A>,
 {
-    fn solvec_inplace<'a, Sb>(
-        &self,
-        b: &'a mut ArrayBase<Sb, Ix1>,
-    ) -> Result<&'a mut ArrayBase<Sb, Ix1>>
-    where
-        Sb: DataMut<Elem = A>,
-    {
+    fn solvec_inplace<'a>(&self, b: &'a mut ArrayRef<A, Ix1>) -> Result<&'a mut ArrayRef<A, Ix1>> {
         A::solve_cholesky(
             self.factor.square_layout()?,
             self.uplo,
@@ -225,10 +219,9 @@ pub trait CholeskyInplace {
     fn cholesky_inplace(&mut self, uplo: UPLO) -> Result<&mut Self>;
 }
 
-impl<A, S> Cholesky for ArrayBase<S, Ix2>
+impl<A> Cholesky for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type Output = Array2<A>;
 
@@ -251,10 +244,9 @@ where
     }
 }
 
-impl<A, S> CholeskyInplace for ArrayBase<S, Ix2>
+impl<A> CholeskyInplace for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: DataMut<Elem = A>,
 {
     fn cholesky_inplace(&mut self, uplo: UPLO) -> Result<&mut Self> {
         A::cholesky(self.square_layout()?, uplo, self.as_allocated_mut()?)?;
@@ -301,10 +293,9 @@ where
     }
 }
 
-impl<A, Si> FactorizeC<OwnedRepr<A>> for ArrayBase<Si, Ix2>
+impl<A> FactorizeC<OwnedRepr<A>> for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    Si: Data<Elem = A>,
 {
     fn factorizec(&self, uplo: UPLO) -> Result<CholeskyFactorized<OwnedRepr<A>>> {
         Ok(CholeskyFactorized {
@@ -320,7 +311,7 @@ pub trait SolveC<A: Scalar> {
     /// Solves a system of linear equations `A * x = b` with Hermitian (or real
     /// symmetric) positive definite matrix `A`, where `A` is `self`, `b` is
     /// the argument, and `x` is the successful result.
-    fn solvec<S: Data<Elem = A>>(&self, b: &ArrayBase<S, Ix1>) -> Result<Array1<A>> {
+    fn solvec(&self, b: &ArrayRef<A, Ix1>) -> Result<Array1<A>> {
         let mut b = replicate(b);
         self.solvec_inplace(&mut b)?;
         Ok(b)
@@ -339,24 +330,14 @@ pub trait SolveC<A: Scalar> {
     /// symmetric) positive definite matrix `A`, where `A` is `self`, `b` is
     /// the argument, and `x` is the successful result. The value of `x` is
     /// also assigned to the argument.
-    fn solvec_inplace<'a, S: DataMut<Elem = A>>(
-        &self,
-        b: &'a mut ArrayBase<S, Ix1>,
-    ) -> Result<&'a mut ArrayBase<S, Ix1>>;
+    fn solvec_inplace<'a>(&self, b: &'a mut ArrayRef<A, Ix1>) -> Result<&'a mut ArrayRef<A, Ix1>>;
 }
 
-impl<A, S> SolveC<A> for ArrayBase<S, Ix2>
+impl<A> SolveC<A> for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
-    fn solvec_inplace<'a, Sb>(
-        &self,
-        b: &'a mut ArrayBase<Sb, Ix1>,
-    ) -> Result<&'a mut ArrayBase<Sb, Ix1>>
-    where
-        Sb: DataMut<Elem = A>,
-    {
+    fn solvec_inplace<'a>(&self, b: &'a mut ArrayRef<A, Ix1>) -> Result<&'a mut ArrayRef<A, Ix1>> {
         self.factorizec(UPLO::Upper)?.solvec_inplace(b)
     }
 }
@@ -377,10 +358,9 @@ pub trait InverseCInto {
     fn invc_into(self) -> Result<Self::Output>;
 }
 
-impl<A, S> InverseC for ArrayBase<S, Ix2>
+impl<A> InverseC for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type Output = Array2<A>;
 
@@ -435,10 +415,9 @@ pub trait DeterminantCInto {
     fn ln_detc_into(self) -> Self::Output;
 }
 
-impl<A, S> DeterminantC for ArrayBase<S, Ix2>
+impl<A> DeterminantC for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type Output = Result<<A as Scalar>::Real>;
 

@@ -34,10 +34,9 @@ pub trait OperationNorm {
     }
 }
 
-impl<A, S> OperationNorm for ArrayBase<S, Ix2>
+impl<A> OperationNorm for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type Output = A::Real;
 

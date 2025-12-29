@@ -9,13 +9,12 @@ use super::qr::*;
 use super::types::*;
 
 /// Hermite conjugate matrix
-pub fn conjugate<A, Si, So>(a: &ArrayBase<Si, Ix2>) -> ArrayBase<So, Ix2>
+pub fn conjugate<A, S>(a: &ArrayRef<A, Ix2>) -> ArrayBase<S, Ix2>
 where
     A: Scalar,
-    Si: Data<Elem = A>,
-    So: DataOwned<Elem = A> + DataMut,
+    S: DataOwned<Elem = A> + DataMut,
 {
-    let mut a: ArrayBase<So, Ix2> = replicate(&a.t());
+    let mut a: ArrayBase<S, Ix2> = replicate(&a.t());
     for val in a.iter_mut() {
         *val = val.conj();
     }

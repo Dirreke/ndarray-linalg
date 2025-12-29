@@ -92,9 +92,7 @@ pub trait Orthogonalizer {
     /// - `a` becomes the tangent vector
     /// - The Coefficients to the current basis is returned.
     ///
-    fn decompose<S>(&self, a: &mut ArrayBase<S, Ix1>) -> Coefficients<Self::Elem>
-    where
-        S: DataMut<Elem = Self::Elem>;
+    fn decompose(&self, a: &mut ArrayRef<Self::Elem, Ix1>) -> Coefficients<Self::Elem>;
 
     /// Calculate the coefficient to the current basis basis
     ///
@@ -112,9 +110,7 @@ pub trait Orthogonalizer {
 
     /// Add new vector if the residual is larger than relative tolerance,
     /// and return the residual vector
-    fn div_append<S>(&mut self, a: &mut ArrayBase<S, Ix1>) -> AppendResult<Self::Elem>
-    where
-        S: DataMut<Elem = Self::Elem>;
+    fn div_append(&mut self, a: &mut ArrayRef<Self::Elem, Ix1>) -> AppendResult<Self::Elem>;
 
     /// Get Q-matrix of generated basis
     fn get_q(&self) -> Q<Self::Elem>;

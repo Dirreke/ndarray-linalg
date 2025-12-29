@@ -39,10 +39,9 @@ pub trait Eig {
     fn eig(&self) -> Result<(Self::EigVal, Self::EigVec)>;
 }
 
-impl<A, S> Eig for ArrayBase<S, Ix2>
+impl<A> Eig for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type EigVal = Array1<A::Complex>;
     type EigVec = Array2<A::Complex>;
@@ -65,10 +64,9 @@ pub trait EigVals {
     fn eigvals(&self) -> Result<Self::EigVal>;
 }
 
-impl<A, S> EigVals for ArrayBase<S, Ix2>
+impl<A> EigVals for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type EigVal = Array1<A::Complex>;
 
@@ -127,27 +125,71 @@ pub trait EigGeneralized {
     /// computing the eigenvalues as α/β. If `None`, no approximate comparisons to zero will be
     /// made.
     fn eig_generalized(
-        &self,
+        self,
         thresh_opt: Option<Self::Real>,
     ) -> Result<(Self::EigVal, Self::EigVec)>;
 }
 
-impl<A, S> EigGeneralized for (ArrayBase<S, Ix2>, ArrayBase<S, Ix2>)
+/// Turn arrays, references to arrays, and [`ArrayRef`]s into owned arrays
+pub trait MaybeOwnedMatrix {
+    type Elem;
+
+    /// Convert into an owned array, cloning only when necessary.
+    fn into_owned(self) -> Array2<Self::Elem>;
+}
+
+impl<S> MaybeOwnedMatrix for ArrayBase<S, Ix2>
 where
-    A: Scalar + Lapack,
-    S: Data<Elem = A>,
+    S: Data,
+    S::Elem: Clone,
 {
-    type EigVal = Array1<GeneralizedEigenvalue<A::Complex>>;
-    type EigVec = Array2<A::Complex>;
-    type Real = A::Real;
+    type Elem = S::Elem;
+
+    fn into_owned(self) -> Array2<S::Elem> {
+        ArrayBase::into_owned(self)
+    }
+}
+
+impl<S> MaybeOwnedMatrix for &ArrayBase<S, Ix2>
+where
+    S: Data,
+    S::Elem: Clone,
+{
+    type Elem = S::Elem;
+
+    fn into_owned(self) -> Array2<S::Elem> {
+        self.to_owned()
+    }
+}
+
+impl<A> MaybeOwnedMatrix for &ArrayRef2<A>
+where
+    A: Clone,
+{
+    type Elem = A;
+
+    fn into_owned(self) -> Array2<A> {
+        self.to_owned()
+    }
+}
+
+impl<T1, T2> EigGeneralized for (T1, T2)
+where
+    T1: MaybeOwnedMatrix,
+    T1::Elem: Lapack + Scalar,
+    T2: MaybeOwnedMatrix<Elem = T1::Elem>,
+{
+    type EigVal = Array1<GeneralizedEigenvalue<<T1::Elem as Scalar>::Complex>>;
+    type EigVec = Array2<<T1::Elem as Scalar>::Complex>;
+    type Real = <T1::Elem as Scalar>::Real;
 
     fn eig_generalized(
-        &self,
+        self,
         thresh_opt: Option<Self::Real>,
     ) -> Result<(Self::EigVal, Self::EigVec)> {
-        let (mut a, mut b) = (self.0.to_owned(), self.1.to_owned());
+        let (mut a, mut b) = (self.0.into_owned(), self.1.into_owned());
         let layout = a.square_layout()?;
-        let (s, t) = A::eig_generalized(
+        let (s, t) = T1::Elem::eig_generalized(
             true,
             layout,
             a.as_allocated_mut()?,
@@ -159,5 +201,27 @@ where
             ArrayBase::from(s),
             Array2::from_shape_vec((n, n).f(), t).unwrap(),
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::MaybeOwnedMatrix;
+
+    #[test]
+    fn test_maybe_owned_matrix() {
+        let a = array![[1.0, 2.0], [3.0, 4.0]];
+        let a_ptr = a.as_ptr();
+        let a1 = MaybeOwnedMatrix::into_owned(a);
+        assert_eq!(a_ptr, a1.as_ptr());
+
+        let b = a1.clone();
+        let b1 = MaybeOwnedMatrix::into_owned(&b);
+        assert_eq!(b, b1);
+        assert_ne!(b.as_ptr(), b1.as_ptr());
+
+        let b2 = MaybeOwnedMatrix::into_owned(&*b);
+        assert_eq!(b, b2);
+        assert_ne!(b.as_ptr(), b2.as_ptr());
     }
 }

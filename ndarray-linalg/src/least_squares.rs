@@ -91,9 +91,8 @@ pub struct LeastSquaresResult<E: Scalar, I: Dimension> {
     pub residual_sum_of_squares: Option<Array<E::Real, I::Smaller>>,
 }
 /// Solve least squares for immutable references
-pub trait LeastSquaresSvd<D, E, I>
+pub trait LeastSquaresSvd<E, I>
 where
-    D: Data<Elem = E>,
     E: Scalar + Lapack,
     I: Dimension,
 {
@@ -104,7 +103,7 @@ where
     /// `A` and `rhs` must have the same layout, i.e. they must
     /// be both either row- or column-major format, otherwise a
     /// `IncompatibleShape` error is raised.
-    fn least_squares(&self, rhs: &ArrayBase<D, I>) -> Result<LeastSquaresResult<E, I>>;
+    fn least_squares(&self, rhs: &ArrayRef<E, I>) -> Result<LeastSquaresResult<E, I>>;
 }
 
 /// Solve least squares for owned matrices
@@ -127,9 +126,8 @@ where
 
 /// Solve least squares for mutable references, overwriting
 /// the input fields in the process
-pub trait LeastSquaresSvdInPlace<D, E, I>
+pub trait LeastSquaresSvdInPlace<E, I>
 where
-    D: Data<Elem = E>,
     E: Scalar + Lapack,
     I: Dimension,
 {
@@ -143,7 +141,7 @@ where
     /// `IncompatibleShape` error is raised.
     fn least_squares_in_place(
         &mut self,
-        rhs: &mut ArrayBase<D, I>,
+        rhs: &mut ArrayRef<E, I>,
     ) -> Result<LeastSquaresResult<E, I>>;
 }
 
@@ -151,11 +149,9 @@ where
 /// column vector as a right-hand side.
 /// `E` is one of `f32`, `f64`, `c32`, `c64`. `D1`, `D2` can be any
 /// valid representation for `ArrayBase` (over `E`).
-impl<E, D1, D2> LeastSquaresSvd<D2, E, Ix1> for ArrayBase<D1, Ix2>
+impl<E> LeastSquaresSvd<E, Ix1> for ArrayRef<E, Ix2>
 where
     E: Scalar + Lapack,
-    D1: Data<Elem = E>,
-    D2: Data<Elem = E>,
 {
     /// Solve a least squares problem of the form `Ax = rhs`
     /// by calling `A.least_squares(&rhs)`, where `rhs` is a
@@ -164,7 +160,7 @@ where
     /// `A` and `rhs` must have the same layout, i.e. they must
     /// be both either row- or column-major format, otherwise a
     /// `IncompatibleShape` error is raised.
-    fn least_squares(&self, rhs: &ArrayBase<D2, Ix1>) -> Result<LeastSquaresResult<E, Ix1>> {
+    fn least_squares(&self, rhs: &ArrayRef<E, Ix1>) -> Result<LeastSquaresResult<E, Ix1>> {
         let a = self.to_owned();
         let b = rhs.to_owned();
         a.least_squares_into(b)
@@ -175,11 +171,9 @@ where
 /// (=mulitipe vectors) as a right-hand side.
 /// `E` is one of `f32`, `f64`, `c32`, `c64`. `D1`, `D2` can be any
 /// valid representation for `ArrayBase` (over `E`).
-impl<E, D1, D2> LeastSquaresSvd<D2, E, Ix2> for ArrayBase<D1, Ix2>
+impl<E> LeastSquaresSvd<E, Ix2> for ArrayRef<E, Ix2>
 where
     E: Scalar + Lapack,
-    D1: Data<Elem = E>,
-    D2: Data<Elem = E>,
 {
     /// Solve a least squares problem of the form `Ax = rhs`
     /// by calling `A.least_squares(&rhs)`, where `rhs` is
@@ -188,7 +182,7 @@ where
     /// `A` and `rhs` must have the same layout, i.e. they must
     /// be both either row- or column-major format, otherwise a
     /// `IncompatibleShape` error is raised.
-    fn least_squares(&self, rhs: &ArrayBase<D2, Ix2>) -> Result<LeastSquaresResult<E, Ix2>> {
+    fn least_squares(&self, rhs: &ArrayRef<E, Ix2>) -> Result<LeastSquaresResult<E, Ix2>> {
         let a = self.to_owned();
         let b = rhs.to_owned();
         a.least_squares_into(b)
@@ -255,11 +249,9 @@ where
 ///
 /// `E` is one of `f32`, `f64`, `c32`, `c64`. `D1`, `D2` can be any
 /// valid representation for `ArrayBase` (over `E`).
-impl<E, D1, D2> LeastSquaresSvdInPlace<D2, E, Ix1> for ArrayBase<D1, Ix2>
+impl<E> LeastSquaresSvdInPlace<E, Ix1> for ArrayRef<E, Ix2>
 where
     E: Scalar + Lapack,
-    D1: DataMut<Elem = E>,
-    D2: DataMut<Elem = E>,
 {
     /// Solve a least squares problem of the form `Ax = rhs`
     /// by calling `A.least_squares(rhs)`, where `rhs` is a
@@ -270,7 +262,7 @@ where
     /// `IncompatibleShape` error is raised.
     fn least_squares_in_place(
         &mut self,
-        rhs: &mut ArrayBase<D2, Ix1>,
+        rhs: &mut ArrayRef<E, Ix1>,
     ) -> Result<LeastSquaresResult<E, Ix1>> {
         if self.shape()[0] != rhs.shape()[0] {
             return Err(ShapeError::from_kind(ErrorKind::IncompatibleShape).into());
@@ -288,14 +280,12 @@ where
     }
 }
 
-fn compute_least_squares_srhs<E, D1, D2>(
-    a: &mut ArrayBase<D1, Ix2>,
-    rhs: &mut ArrayBase<D2, Ix1>,
+fn compute_least_squares_srhs<E>(
+    a: &mut ArrayRef<E, Ix2>,
+    rhs: &mut ArrayRef<E, Ix1>,
 ) -> Result<LeastSquaresResult<E, Ix1>>
 where
     E: Scalar + Lapack,
-    D1: DataMut<Elem = E>,
-    D2: DataMut<Elem = E>,
 {
     let LeastSquaresOwned::<E> {
         singular_values,
@@ -318,11 +308,11 @@ where
     })
 }
 
-fn compute_residual_scalar<E: Scalar, D: Data<Elem = E>>(
+fn compute_residual_scalar<E: Scalar>(
     m: usize,
     n: usize,
     rank: i32,
-    b: &ArrayBase<D, Ix1>,
+    b: &ArrayRef<E, Ix1>,
 ) -> Option<Array<E::Real, Ix0>> {
     if m < n || n != rank as usize {
         return None;
@@ -338,11 +328,9 @@ fn compute_residual_scalar<E: Scalar, D: Data<Elem = E>>(
 ///
 /// `E` is one of `f32`, `f64`, `c32`, `c64`. `D1`, `D2` can be any
 /// valid representation for `ArrayBase` (over `E`).
-impl<E, D1, D2> LeastSquaresSvdInPlace<D2, E, Ix2> for ArrayBase<D1, Ix2>
+impl<E> LeastSquaresSvdInPlace<E, Ix2> for ArrayRef<E, Ix2>
 where
     E: Scalar + Lapack,
-    D1: DataMut<Elem = E>,
-    D2: DataMut<Elem = E>,
 {
     /// Solve a least squares problem of the form `Ax = rhs`
     /// by calling `A.least_squares(rhs)`, where `rhs` is a
@@ -353,7 +341,7 @@ where
     /// `IncompatibleShape` error is raised.
     fn least_squares_in_place(
         &mut self,
-        rhs: &mut ArrayBase<D2, Ix2>,
+        rhs: &mut ArrayRef<E, Ix2>,
     ) -> Result<LeastSquaresResult<E, Ix2>> {
         if self.shape()[0] != rhs.shape()[0] {
             return Err(ShapeError::from_kind(ErrorKind::IncompatibleShape).into());
@@ -375,14 +363,12 @@ where
     }
 }
 
-fn compute_least_squares_nrhs<E, D1, D2>(
-    a: &mut ArrayBase<D1, Ix2>,
-    rhs: &mut ArrayBase<D2, Ix2>,
+fn compute_least_squares_nrhs<E>(
+    a: &mut ArrayRef<E, Ix2>,
+    rhs: &mut ArrayRef<E, Ix2>,
 ) -> Result<LeastSquaresResult<E, Ix2>>
 where
     E: Scalar + Lapack,
-    D1: DataMut<Elem = E>,
-    D2: DataMut<Elem = E>,
 {
     let a_layout = a.layout()?;
     let rhs_layout = rhs.layout()?;
@@ -408,11 +394,11 @@ where
     })
 }
 
-fn compute_residual_array1<E: Scalar, D: Data<Elem = E>>(
+fn compute_residual_array1<E: Scalar>(
     m: usize,
     n: usize,
     rank: i32,
-    b: &ArrayBase<D, Ix2>,
+    b: &ArrayRef<E, Ix2>,
 ) -> Option<Array1<E::Real>> {
     if m < n || n != rank as usize {
         return None;

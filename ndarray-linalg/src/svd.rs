@@ -59,10 +59,9 @@ where
     }
 }
 
-impl<A, S> SVD for ArrayBase<S, Ix2>
+impl<A> SVD for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: Data<Elem = A>,
 {
     type U = Array2<A>;
     type VT = Array2<A>;
@@ -78,10 +77,9 @@ where
     }
 }
 
-impl<A, S> SVDInplace for ArrayBase<S, Ix2>
+impl<A> SVDInplace for ArrayRef<A, Ix2>
 where
     A: Scalar + Lapack,
-    S: DataMut<Elem = A>,
 {
     type U = Array2<A>;
     type VT = Array2<A>;

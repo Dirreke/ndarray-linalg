@@ -18,10 +18,7 @@ pub trait AllocatedArrayMut: AllocatedArray {
     fn as_allocated_mut(&mut self) -> Result<&mut [Self::Elem]>;
 }
 
-impl<A, S> AllocatedArray for ArrayBase<S, Ix2>
-where
-    S: Data<Elem = A>,
-{
+impl<A> AllocatedArray for ArrayRef<A, Ix2> {
     type Elem = A;
 
     fn layout(&self) -> Result<MatrixLayout> {
@@ -72,10 +69,7 @@ where
     }
 }
 
-impl<A, S> AllocatedArrayMut for ArrayBase<S, Ix2>
-where
-    S: DataMut<Elem = A>,
-{
+impl<A> AllocatedArrayMut for ArrayRef<A, Ix2> {
     fn as_allocated_mut(&mut self) -> Result<&mut [A]> {
         self.as_slice_memory_order_mut()
             .ok_or(LinalgError::MemoryNotCont)

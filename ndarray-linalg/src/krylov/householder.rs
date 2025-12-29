@@ -8,10 +8,9 @@ use crate::{inner::*, norm::*};
 use num_traits::One;
 
 /// Calc a reflactor `w` from a vector `x`
-pub fn calc_reflector<A, S>(x: &mut ArrayBase<S, Ix1>)
+pub fn calc_reflector<A>(x: &mut ArrayRef<A, Ix1>)
 where
     A: Scalar + Lapack,
-    S: DataMut<Elem = A>,
 {
     assert!(!x.is_empty());
     let norm = x.norm_l2();
@@ -26,11 +25,9 @@ where
 /// Panic
 /// ------
 /// - if the size of `w` and `a` mismaches
-pub fn reflect<A, S1, S2>(w: &ArrayBase<S1, Ix1>, a: &mut ArrayBase<S2, Ix1>)
+pub fn reflect<A>(w: &ArrayRef<A, Ix1>, a: &mut ArrayRef<A, Ix1>)
 where
     A: Scalar + Lapack,
-    S1: Data<Elem = A>,
-    S2: DataMut<Elem = A>,
 {
     assert_eq!(w.len(), a.len());
     let n = a.len();
@@ -66,10 +63,7 @@ impl<A: Scalar + Lapack> Householder<A> {
     }
 
     /// Take a Reflection `P = I - 2ww^T`
-    fn fundamental_reflection<S>(&self, k: usize, a: &mut ArrayBase<S, Ix1>)
-    where
-        S: DataMut<Elem = A>,
-    {
+    fn fundamental_reflection(&self, k: usize, a: &mut ArrayRef<A, Ix1>) {
         assert!(k < self.v.len());
         assert_eq!(
             a.len(),
@@ -80,10 +74,7 @@ impl<A: Scalar + Lapack> Householder<A> {
     }
 
     /// Take forward reflection `P = P_l ... P_1`
-    pub fn forward_reflection<S>(&self, a: &mut ArrayBase<S, Ix1>)
-    where
-        S: DataMut<Elem = A>,
-    {
+    pub fn forward_reflection(&self, a: &mut ArrayRef<A, Ix1>) {
         assert!(a.len() == self.dim);
         let l = self.v.len();
         for k in 0..l {
@@ -92,10 +83,7 @@ impl<A: Scalar + Lapack> Householder<A> {
     }
 
     /// Take backward reflection `P = P_1 ... P_l`
-    pub fn backward_reflection<S>(&self, a: &mut ArrayBase<S, Ix1>)
-    where
-        S: DataMut<Elem = A>,
-    {
+    pub fn backward_reflection(&self, a: &mut ArrayRef<A, Ix1>) {
         assert!(a.len() == self.dim);
         let l = self.v.len();
         for k in (0..l).rev() {
@@ -104,10 +92,7 @@ impl<A: Scalar + Lapack> Householder<A> {
     }
 
     /// Compose coefficients array using reflected vector
-    fn compose_coefficients<S>(&self, a: &ArrayBase<S, Ix1>) -> Coefficients<A>
-    where
-        S: Data<Elem = A>,
-    {
+    fn compose_coefficients(&self, a: &ArrayRef<A, Ix1>) -> Coefficients<A> {
         let k = self.len();
         let res = a.slice(s![k..]).norm_l2();
         let mut c = Array1::zeros(k + 1);
@@ -122,10 +107,7 @@ impl<A: Scalar + Lapack> Householder<A> {
     }
 
     /// Construct the residual vector from reflected vector
-    fn construct_residual<S>(&self, a: &mut ArrayBase<S, Ix1>)
-    where
-        S: DataMut<Elem = A>,
-    {
+    fn construct_residual(&self, a: &mut ArrayRef<A, Ix1>) {
         let k = self.len();
         azip!((a in a.slice_mut(s![..k])) *a = A::zero());
         self.backward_reflection(a);
@@ -147,10 +129,7 @@ impl<A: Scalar + Lapack> Orthogonalizer for Householder<A> {
         self.tol
     }
 
-    fn decompose<S>(&self, a: &mut ArrayBase<S, Ix1>) -> Array1<A>
-    where
-        S: DataMut<Elem = A>,
-    {
+    fn decompose(&self, a: &mut ArrayRef<A, Ix1>) -> Array1<A> {
         self.forward_reflection(a);
         let coef = self.compose_coefficients(a);
         self.construct_residual(a);
@@ -166,10 +145,7 @@ impl<A: Scalar + Lapack> Orthogonalizer for Householder<A> {
         self.compose_coefficients(&a)
     }
 
-    fn div_append<S>(&mut self, a: &mut ArrayBase<S, Ix1>) -> AppendResult<A>
-    where
-        S: DataMut<Elem = A>,
-    {
+    fn div_append(&mut self, a: &mut ArrayRef<A, Ix1>) -> AppendResult<A> {
         assert_eq!(a.len(), self.dim);
         let k = self.len();
         self.forward_reflection(a);

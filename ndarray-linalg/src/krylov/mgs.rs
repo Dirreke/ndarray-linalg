@@ -42,10 +42,7 @@ impl<A: Scalar + Lapack> Orthogonalizer for MGS<A> {
         self.tol
     }
 
-    fn decompose<S>(&self, a: &mut ArrayBase<S, Ix1>) -> Array1<A>
-    where
-        S: DataMut<Elem = A>,
-    {
+    fn decompose(&self, a: &mut ArrayRef<A, Ix1>) -> Array1<A> {
         assert_eq!(a.len(), self.dim());
         let mut coef = Array1::zeros(self.len() + 1);
         for i in 0..self.len() {
@@ -77,10 +74,9 @@ impl<A: Scalar + Lapack> Orthogonalizer for MGS<A> {
         self.div_append(&mut a)
     }
 
-    fn div_append<S>(&mut self, a: &mut ArrayBase<S, Ix1>) -> AppendResult<A>
+    fn div_append(&mut self, a: &mut ArrayRef<A, Ix1>) -> AppendResult<A>
     where
         A: Lapack,
-        S: DataMut<Elem = A>,
     {
         let coef = self.decompose(a);
         let nrm = coef[coef.len() - 1].re();
